@@ -25,8 +25,22 @@ public:
         : Buyer(buyer.getId(), buyer.getName(), buyer.getAccount()), sellerId(sellerId), sellerName(sellerName) {
             Buyer::setId(buyer.getId());
         }
-
     virtual ~seller() = default;
+
+    // Getter untuk sellerId
+    int getSellerId() const {
+        return sellerId;
+    }
+
+    // Getter untuk sellerName (storeName)
+    std::string getStoreName() const {
+        return sellerName;
+    }
+
+    // Getter jika kamu butuh nama seller (nama orang, bukan store)
+    std::string getSellerName() const {
+        return Buyer::getName();
+    }
 
     void addNewItem(int newId, const std::string& newName, int newQuantity, double newPrice) {
         Item newItem(newId, newName, newQuantity, newPrice);
