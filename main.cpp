@@ -1,6 +1,8 @@
 #include <iostream>
+#include <vector>
 #include "bank_customer.h"
 #include "buyer.h"
+#include "seller.h"
 
 enum PrimaryPrompt{LOGIN, REGISTER, EXIT, ADMIN_LOGIN};
 enum RegisterPrompt{CREATE_BUYER, CREATE_SELLER, BACK};
@@ -14,6 +16,12 @@ int main() {
     const string ADMIN_PASSWORD = "toor";
     string username, password;
 
+    //Penyimpanan data
+    vector<Buyer> buyers;
+    vector<seller> sellers;
+    int nextBuyerId = 1;
+    int nextSellerId = 1;
+
     while (prompt != EXIT) {
         cout << "Select an option: " << endl;
         cout << "1. Login" << endl;
@@ -24,8 +32,40 @@ int main() {
         cin >> choice;
         prompt = static_cast<PrimaryPrompt>(choice - 1);
         switch (prompt) {
-            case LOGIN:
-                cout << "Login selected." << endl;
+            case LOGIN: {
+                cout << "=== Login ===" << endl;
+                int id;
+                cout << "Enter Buyer/Seller ID: ";
+                cin >> id;
+
+                bool loggedIn = false;
+
+                // cek Buyer dulu
+                for (auto &b : buyers) {
+                    if (b.getId() == id) {
+                        cout << "Logged in as Buyer: " << b.getName() << endl;
+                        // TODO: menu Buyer
+                        loggedIn = true;
+                        break;
+                    }
+                }
+
+                // cek Seller
+                for (auto &s : sellers) {
+                    if (s.getId() == id) {
+                        cout << "Logged in as Seller: " << s.getName() << endl;
+                        // TODO: menu Seller
+                        loggedIn = true;
+                        break;
+                    }
+                }
+
+                if (!loggedIn) {
+                    cout << "Account not found!" << endl;
+                }
+                break;
+            }
+
                 /* if Login is selected, based on authority then provide options:
                 assume user is logged in as Buyer for now
                 1. Chek Account Status (will display if user is Buyer or Seller or both and linked banking account status)
@@ -77,7 +117,6 @@ int main() {
                 9. Exit to main Menu
                 10. Exit Program
                 **/
-                break;
             case REGISTER:
                 regPrompt = CREATE_BUYER; // reset regPrompt to CREATE_BUYER when entering register menu
                 while (regPrompt != BACK){
@@ -90,12 +129,54 @@ int main() {
                     cin >> regChoice;
                     regPrompt = static_cast<RegisterPrompt>(regChoice - 1);
                     switch (regPrompt) {
-                        case CREATE_BUYER:
-                            cout << "Create Buyer Account selected." << endl;
+                        case CREATE_BUYER: {
+                            cout << "=== Create Buyer Account ===" << endl;
+                            string name;
+                            cout << "Enter name: ";
+                            cin >> name;
+
+                            // buat BankCustomer dummy dengan saldo awal 0
+                            BankCustomer newCustomer(nextBuyerId, name, 0.0);
+
+                            // buat Buyer dengan akun bank
+                            Buyer newBuyer(nextBuyerId, name, newCustomer);
+                            buyers.push_back(newBuyer);
+
+                            cout << "Buyer account created with ID: " << nextBuyerId << endl;
+                            nextBuyerId++;
                             break;
-                        case CREATE_SELLER:
-                            cout << "Create Seller Account selected." << endl;
+                            }
+                        case CREATE_SELLER: {
+                            if (buyers.empty()) {
+                                cout << "No buyers available to upgrade. Please create a Buyer first." << endl;
+                                break;
+                            }
+
+                            cout << "=== Upgrade Buyer to Seller ===" << endl;
+                            int buyerId;
+                            cout << "Enter Buyer ID to upgrade: ";
+                            cin >> buyerId;
+
+                            bool found = false;
+                            for (auto &b : buyers) {
+                                if (b.getId() == buyerId) {
+                                    string storeName;
+                                    cout << "Enter Store Name: ";
+                                    cin >> storeName;
+                                    seller newSeller(b, nextSellerId, storeName);
+                                    sellers.push_back(newSeller);
+                                    cout << "Seller account created for Buyer ID: " << buyerId << endl;
+                                    nextSellerId++;
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (!found) {
+                                cout << "Buyer not found!" << endl;
+                            }
                             break;
+                        }
+
                         case BACK:
                             cout << "Back selected." << endl;
                             break;
@@ -119,10 +200,66 @@ int main() {
                 break;
             case ADMIN_LOGIN:
                 /* Prompt for username & password then check the entries with our hard coded features */
+                cout << "=== Admin Login ===" << endl;
                 cout << "Username: ";
                 cin >> username;
                 cout << "Password: ";
                 cin >> password;
+                
+                if (username == ADMIN_USERNAME && password == ADMIN_PASSWORD) {
+                cout << "Admin login sukses.\n";
+
+                bool adminExit = false;
+                while (!adminExit) {
+                    cout << "\n--- ADMIN MENU ---\n";
+                    cout << "1. View all Buyers\n";
+                    cout << "2. View all Sellers\n";
+                    cout << "3. Logout to main menu\n";
+                    cout << "Pilih: ";
+                    int achoice;
+                    cin >> achoice;
+
+                    switch (achoice) {
+                        case 1: {
+                            cout << "\n-- Buyers List --\n";
+                            if (buyers.empty()) {
+                                cout << "No buyers registered.\n";
+                            } else {
+                                for (const auto &b : buyers) {
+                                    cout << "ID: " << b.getId()
+                                        << " | Name: " << b.getName() << "\n";
+                                }
+                            }
+                            break;
+                        }
+                        case 2: {
+                            cout << "\n-- Sellers List --\n";
+                            if (sellers.empty()) {
+                                cout << "No sellers registered.\n";
+                            } else {
+                                for (const auto &s : sellers) {
+                                    cout << "SellerID: " << s.getSellerId()
+                                        << " | Store: " << s.getStoreName()
+                                        << " | OwnerID: " << s.getId()
+                                        << " | OwnerName: " << s.getName() << "\n";
+                                }
+                            }
+                            break;
+                        }
+                        case 3:
+                            adminExit = true;
+                            cout << "Logging out admin...\n";
+                            break;
+                        default:
+                            cout << "Invalid admin option.\n";
+                    }
+                }
+            } else {
+                cout << "Admin login failed: invalid credentials.\n";
+            }
+            break;
+            }
+
                 /** After login create a sub prompt that provides the following features
                 1. Account Management
                     - View All Buyers, Sellers
@@ -134,11 +271,7 @@ int main() {
                     - Total number of Buyers, Sellers
                     - Total number of Banking Accounts
                 */
-                break;
-            default:
-                cout << "Invalid option." << endl;
-                break;
-        }
+                
         cout << endl;
     }
 
